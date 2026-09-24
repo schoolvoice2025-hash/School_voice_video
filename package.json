@@ -1,0 +1,20 @@
+{
+  "name": "school-voice-casting",
+  "version": "1.0.0",
+  "description": "Plateforme de dépôt et de présélection des vidéos de casting — School Voice 2027",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "connect-sqlite3": "^0.9.15",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.15"
+  }
+}

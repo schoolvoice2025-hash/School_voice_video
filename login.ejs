@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion admin — School Voice 2027</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="admin-login-wrap">
+    <div class="admin-login-card">
+      <h1>Espace organisation</h1>
+      <p style="color:var(--grey); font-size:0.9rem; margin-top:-8px;">School Voice 2027 — Casting vidéo</p>
+      <% if (erreur) { %>
+        <div class="alert error"><%= erreur %></div>
+      <% } %>
+      <form action="/admin/login" method="POST">
+        <div class="field">
+          <label for="motdepasse">Mot de passe</label>
+          <input type="password" id="motdepasse" name="motdepasse" required autofocus>
+        </div>
+        <button type="submit" class="btn gold full">Se connecter</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

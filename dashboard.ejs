@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord — School Voice 2027</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">School Voice 2027<small>ESPACE ORGANISATION</small></div>
+    <nav>
+      <a href="/">Site public</a>
+      <a href="/admin/logout">Déconnexion</a>
+    </nav>
+  </div>
+
+  <div class="wrap wide">
+    <h1 style="font-family: var(--serif); color: var(--navy);">Candidatures vidéo</h1>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="num"><%= stats.total %></div><div class="lbl">Total reçues</div></div>
+      <div class="stat-card gold"><div class="num"><%= stats.enAttente %></div><div class="lbl">En attente d'analyse</div></div>
+      <div class="stat-card green"><div class="num"><%= stats.retenus %></div><div class="lbl">Retenues</div></div>
+      <div class="stat-card red"><div class="num"><%= stats.nonRetenus %></div><div class="lbl">Non retenues</div></div>
+    </div>
+
+    <form class="filters" method="GET" action="/admin">
+      <select name="zone" onchange="this.form.submit()">
+        <option value="">Toutes les zones</option>
+        <% zones.forEach(z => { %>
+          <option value="<%= z %>" <%= zoneFiltre === z ? "selected" : "" %>><%= z %></option>
+        <% }) %>
+      </select>
+      <select name="statut" onchange="this.form.submit()">
+        <option value="">Tous les statuts</option>
+        <option value="en_attente" <%= statutFiltre === "en_attente" ? "selected" : "" %>>En attente</option>
+        <option value="retenu" <%= statutFiltre === "retenu" ? "selected" : "" %>>Retenu</option>
+        <option value="non_retenu" <%= statutFiltre === "non_retenu" ? "selected" : "" %>>Non retenu</option>
+      </select>
+      <% if (zoneFiltre || statutFiltre) { %>
+        <a href="/admin" class="btn outline small">Réinitialiser</a>
+      <% } %>
+    </form>
+
+    <table class="list">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Candidat(e)</th>
+          <th>Zone</th>
+          <th>Contact</th>
+          <th>Statut</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (candidatures.length === 0) { %>
+          <tr><td colspan="6" style="text-align:center; color:var(--grey); padding:30px;">Aucune candidature pour ce filtre.</td></tr>
+        <% } %>
+        <% candidatures.forEach(c => { %>
+          <tr>
+            <td><%= new Date(c.date_soumission).toLocaleDateString("fr-FR") %></td>
+            <td><strong><%= c.prenom %> <%= c.nom %></strong></td>
+            <td><%= c.zone %></td>
+            <td style="font-size:0.8rem; color:var(--grey);"><%= c.email %><br><%= c.whatsapp %></td>
+            <td>
+              <% if (c.statut === "retenu") { %><span class="badge retenu">Retenu</span>
+              <% } else if (c.statut === "non_retenu") { %><span class="badge refuse">Non retenu</span>
+              <% } else { %><span class="badge attente">En attente</span><% } %>
+            </td>
+            <td><a href="/admin/candidat/<%= c.id %>" class="btn outline small">Ouvrir</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<%- include("partials/header", { titre: "Déposer ma vidéo — School Voice 2027" }) %>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="tag">FORMULAIRE DE DÉPÔT</span>
+    <h1>Déposez votre vidéo</h1>
+    <p class="lead">Vidéo de 60 secondes maximum. Vérifiez que votre email et votre numéro WhatsApp sont bien actifs : c'est par là que nous vous répondrons.</p>
+  </div>
+
+  <div class="card">
+    <% if (erreur) { %>
+      <div class="alert error"><%= erreur %></div>
+    <% } %>
+
+    <form action="/candidature" method="POST" enctype="multipart/form-data" id="formCandidature">
+      <div class="field">
+        <label for="prenom">Prénom</label>
+        <input type="text" id="prenom" name="prenom" required>
+      </div>
+      <div class="field">
+        <label for="nom">Nom</label>
+        <input type="text" id="nom" name="nom" required>
+      </div>
+      <div class="field">
+        <label for="zone">Votre zone School Voice</label>
+        <select id="zone" name="zone" required>
+          <option value="" disabled selected>Choisissez votre zone</option>
+          <% zones.forEach(z => { %>
+            <option value="<%= z %>"><%= z %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="email">Adresse email (fonctionnelle)</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="field">
+        <label for="whatsapp">Numéro WhatsApp (fonctionnel)</label>
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="Ex : 22961234567" required>
+        <p class="hint">Format international sans le "+", ex : 22961234567.</p>
+      </div>
+
+      <div class="field">
+        <label for="video">Votre vidéo (60 secondes maximum)</label>
+        <div class="video-drop" id="videoDrop">
+          <input type="file" id="video" name="video" accept="video/*" required style="width:100%;">
+          <p id="videoStatus">Formats acceptés : MP4, MOV, WebM… Taille max <%= tailleMaxMo %> Mo.</p>
+          <video id="videoPreview" class="video-preview" controls style="display:none;"></video>
+        </div>
+        <input type="hidden" name="duree" id="dureeVideo">
+      </div>
+
+      <button type="submit" class="btn gold full" id="btnEnvoyer" disabled>Envoyer ma candidature</button>
+      <p class="hint" style="text-align:center; margin-top:10px;">Le bouton s'active une fois votre vidéo vérifiée (durée ≤ 60 s).</p>
+    </form>
+  </div>
+</div>
+
+<script>
+  const inputVideo = document.getElementById("video");
+  const preview = document.getElementById("videoPreview");
+  const statusEl = document.getElementById("videoStatus");
+  const dropZone = document.getElementById("videoDrop");
+  const dureeInput = document.getElementById("dureeVideo");
+  const btn = document.getElementById("btnEnvoyer");
+
+  inputVideo.addEventListener("change", () => {
+    const fichier = inputVideo.files[0];
+    btn.disabled = true;
+    dropZone.classList.remove("has-file", "error");
+
+    if (!fichier) return;
+
+    const url = URL.createObjectURL(fichier);
+    preview.src = url;
+    preview.style.display = "block";
+
+    preview.onloadedmetadata = () => {
+      const duree = preview.duration;
+
+      if (!isFinite(duree) || isNaN(duree)) {
+        // Certains navigateurs ne calculent pas immédiatement la durée de certains formats.
+        // On laisse alors l'envoi se faire ; la vérification est refaite côté serveur si possible.
+        dropZone.classList.add("has-file");
+        statusEl.textContent = "Vidéo chargée. Durée non détectée automatiquement — vérifiez vous-même qu'elle ne dépasse pas 60 secondes avant d'envoyer.";
+        dureeInput.value = "";
+        btn.disabled = false;
+        return;
+      }
+
+      dureeInput.value = duree.toFixed(1);
+
+      if (duree > 60.5) {
+        dropZone.classList.add("error");
+        statusEl.textContent = `Votre vidéo dure ${duree.toFixed(0)} secondes — elle doit faire 60 secondes maximum. Merci de la raccourcir puis de la réimporter.`;
+        btn.disabled = true;
+      } else {
+        dropZone.classList.add("has-file");
+        statusEl.textContent = `Vidéo prête (${duree.toFixed(0)} s) — vous pouvez envoyer votre candidature.`;
+        btn.disabled = false;
+      }
+    };
+  });
+</script>
+
+<%- include("partials/footer") %>
