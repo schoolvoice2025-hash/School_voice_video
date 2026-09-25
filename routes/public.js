@@ -1,7 +1,4 @@
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const crypto = require("crypto");
 
 const db = require("../db/database");
 const ZONES = require("../config/zones");
@@ -16,62 +13,7 @@ const TAILLE_MAX_MO = Number(
   process.env.TAILLE_MAX_VIDEO_MO || 150
 );
 
-const TAILLE_MAX_OCTETS =
-  TAILLE_MAX_MO * 1024 * 1024;
-
-// =====================================================
-// STOCKAGE DES VIDÉOS
-// =====================================================
-
-const storage = multer.diskStorage({
-  destination: path.join(
-    __dirname,
-    "..",
-    "public",
-    "uploads"
-  ),
-
-  filename: (req, file, cb) => {
-    const id = crypto
-      .randomBytes(8)
-      .toString("hex");
-
-    const ext =
-      path.extname(file.originalname) || ".mp4";
-
-    cb(
-      null,
-      `${Date.now()}-${id}${ext}`
-    );
-  },
-});
-
-// =====================================================
-// CONFIGURATION MULTER
-// =====================================================
-
-const upload = multer({
-  storage,
-
-  limits: {
-    fileSize: TAILLE_MAX_OCTETS,
-  },
-
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype &&
-      file.mimetype.startsWith("video/")
-    ) {
-      return cb(null, true);
-    }
-
-    cb(
-      new Error(
-        "Le fichier envoyé n'est pas une vidéo."
-      )
-    );
-  },
-});
+const CLOUDINARY_CLOUD_NAME = "krylli5g";
 
 // =====================================================
 // PAGE D'ACCUEIL
@@ -96,177 +38,161 @@ router.get("/candidature", (req, res) => {
 });
 
 // =====================================================
-// ENVOI D'UNE CANDIDATURE
+// ENREGISTREMENT D'UNE CANDIDATURE
+// La vidéo est déjà envoyée directement à Cloudinary
 // =====================================================
 
 router.post("/candidature", (req, res) => {
 
-  upload.single("video")(
-    req,
-    res,
-    (err) => {
+  const {
+    nom,
+    prenom,
+    email,
+    whatsapp,
+    zone,
+    duree,
+    video_url,
+    video_public_id,
+    video_original_name,
+  } = req.body;
 
-      // -----------------------------------------
-      // ERREUR D'UPLOAD
-      // -----------------------------------------
+  // ===================================================
+  // VALIDATION DES INFORMATIONS
+  // ===================================================
 
-      if (err) {
+  if (
+    !nom ||
+    !prenom ||
+    !email ||
+    !whatsapp ||
+    !zone
+  ) {
+    return res.status(400).render("candidature", {
+      zones: ZONES,
+      erreur: "Merci de remplir tous les champs.",
+      tailleMaxMo: TAILLE_MAX_MO,
+    });
+  }
 
-        let message =
-          err.message ||
-          "Erreur lors de l'envoi de la vidéo.";
+  // ===================================================
+  // VÉRIFICATION DE LA VIDÉO
+  // ===================================================
 
-        // Taille maximale dépassée
-        if (
-          err.code === "LIMIT_FILE_SIZE"
-        ) {
-          message =
-            `Votre vidéo dépasse la taille maximale autorisée de ${TAILLE_MAX_MO} Mo.`;
-        }
+  if (!video_url) {
+    return res.status(400).render("candidature", {
+      zones: ZONES,
+      erreur:
+        "Merci de sélectionner et d'envoyer votre vidéo.",
+      tailleMaxMo: TAILLE_MAX_MO,
+    });
+  }
 
-        return res.status(400).render(
-          "candidature",
-          {
-            zones: ZONES,
-            erreur: message,
-            tailleMaxMo: TAILLE_MAX_MO,
-          }
-        );
-      }
+  // ===================================================
+  // SÉCURITÉ : vérifier que l'URL vient bien
+  // de notre compte Cloudinary
+  // ===================================================
 
-      // -----------------------------------------
-      // RÉCUPÉRATION DES DONNÉES
-      // -----------------------------------------
+  const cloudinaryPrefix =
+    `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/`;
 
-      const {
+  if (!video_url.startsWith(cloudinaryPrefix)) {
+    console.error(
+      "❌ URL vidéo Cloudinary invalide :",
+      video_url
+    );
+
+    return res.status(400).render("candidature", {
+      zones: ZONES,
+      erreur:
+        "La vidéo n'a pas été correctement enregistrée. Merci de réessayer.",
+      tailleMaxMo: TAILLE_MAX_MO,
+    });
+  }
+
+  // ===================================================
+  // VÉRIFICATION DE LA DURÉE
+  // ===================================================
+
+  if (duree && Number(duree) > 60.5) {
+    return res.status(400).render("candidature", {
+      zones: ZONES,
+      erreur:
+        "Votre vidéo dépasse 60 secondes. Merci de la raccourcir.",
+      tailleMaxMo: TAILLE_MAX_MO,
+    });
+  }
+
+  // ===================================================
+  // ENREGISTREMENT EN BASE DE DONNÉES
+  // ===================================================
+
+  try {
+
+    const stmt = db.prepare(`
+      INSERT INTO candidatures (
         nom,
         prenom,
         email,
         whatsapp,
         zone,
-        duree,
-      } = req.body;
+        video_filename,
+        video_original_name
+      )
+      VALUES (
+        @nom,
+        @prenom,
+        @email,
+        @whatsapp,
+        @zone,
+        @video_filename,
+        @video_original_name
+      )
+    `);
 
-      // -----------------------------------------
-      // VALIDATION DES CHAMPS
-      // -----------------------------------------
+    stmt.run({
+      nom: nom.trim(),
+      prenom: prenom.trim(),
+      email: email.trim(),
+      whatsapp: whatsapp.trim(),
+      zone: zone,
 
-      if (
-        !nom ||
-        !prenom ||
-        !email ||
-        !whatsapp ||
-        !zone
-      ) {
-        return res.status(400).render(
-          "candidature",
-          {
-            zones: ZONES,
-            erreur:
-              "Merci de remplir tous les champs.",
-            tailleMaxMo: TAILLE_MAX_MO,
-          }
-        );
-      }
+      // On conserve l'URL Cloudinary dans
+      // l'ancien champ video_filename
+      video_filename: video_url,
 
-      // -----------------------------------------
-      // VÉRIFICATION DE LA VIDÉO
-      // -----------------------------------------
+      video_original_name:
+        (video_original_name || video_public_id || "video")
+          .trim(),
+    });
 
-      if (!req.file) {
-        return res.status(400).render(
-          "candidature",
-          {
-            zones: ZONES,
-            erreur:
-              "Merci de déposer votre vidéo (60 secondes maximum).",
-            tailleMaxMo: TAILLE_MAX_MO,
-          }
-        );
-      }
+    console.log(
+      `✅ Candidature enregistrée : ${prenom} ${nom}`
+    );
 
-      // -----------------------------------------
-      // VÉRIFICATION DE LA DURÉE
-      // -----------------------------------------
+    console.log(
+      `☁️ Vidéo Cloudinary : ${video_url}`
+    );
 
-      if (
-        duree &&
-        Number(duree) > 65
-      ) {
-        return res.status(400).render(
-          "candidature",
-          {
-            zones: ZONES,
-            erreur:
-              "Votre vidéo dépasse 60 secondes. Merci de la raccourcir.",
-            tailleMaxMo: TAILLE_MAX_MO,
-          }
-        );
-      }
+    // =================================================
+    // SUCCÈS
+    // =================================================
 
-      // -----------------------------------------
-      // ENREGISTREMENT EN BASE
-      // -----------------------------------------
+    return res.redirect("/merci");
 
-      try {
+  } catch (e) {
 
-        const stmt = db.prepare(`
-          INSERT INTO candidatures (
-            nom,
-            prenom,
-            email,
-            whatsapp,
-            zone,
-            video_filename,
-            video_original_name
-          )
-          VALUES (
-            @nom,
-            @prenom,
-            @email,
-            @whatsapp,
-            @zone,
-            @video_filename,
-            @video_original_name
-          )
-        `);
+    console.error(
+      "❌ Erreur lors de l'enregistrement de la candidature :",
+      e
+    );
 
-        stmt.run({
-          nom: nom.trim(),
-          prenom: prenom.trim(),
-          email: email.trim(),
-          whatsapp: whatsapp.trim(),
-          zone: zone,
-          video_filename: req.file.filename,
-          video_original_name:
-            req.file.originalname,
-        });
-
-        // ---------------------------------------
-        // SUCCÈS
-        // ---------------------------------------
-
-        return res.redirect("/merci");
-
-      } catch (e) {
-
-        console.error(
-          "❌ Erreur lors de l'enregistrement de la candidature :",
-          e
-        );
-
-        return res.status(500).render(
-          "candidature",
-          {
-            zones: ZONES,
-            erreur:
-              "Une erreur est survenue lors de l'enregistrement de votre candidature. Veuillez réessayer.",
-            tailleMaxMo: TAILLE_MAX_MO,
-          }
-        );
-      }
-    }
-  );
+    return res.status(500).render("candidature", {
+      zones: ZONES,
+      erreur:
+        "Une erreur est survenue lors de l'enregistrement de votre candidature. Veuillez réessayer.",
+      tailleMaxMo: TAILLE_MAX_MO,
+    });
+  }
 });
 
 // =====================================================
