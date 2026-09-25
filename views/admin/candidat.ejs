@@ -3,82 +3,365 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= candidat.prenom %> <%= candidat.nom %> — School Voice 2027</title>
+
+  <title>
+    <%= candidat.prenom %> <%= candidat.nom %> — School Voice 2027
+  </title>
+
   <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
+
   <div class="topbar">
-    <div class="brand">School Voice 2027<small>ESPACE ORGANISATION</small></div>
+
+    <div class="brand">
+      School Voice 2027
+      <small>ESPACE ORGANISATION</small>
+    </div>
+
     <nav>
       <a href="/admin">← Tableau de bord</a>
       <a href="/admin/logout">Déconnexion</a>
     </nav>
+
   </div>
+
 
   <div class="wrap wide">
+
     <% if (typeof info !== "undefined" && info) { %>
-      <div class="alert info"><%= info %></div>
+
+      <div class="alert info">
+        <%= info %>
+      </div>
+
     <% } %>
 
+
     <div class="candidat-header">
+
       <div>
-        <h1 style="font-family: var(--serif); color: var(--navy); margin:0;"><%= candidat.prenom %> <%= candidat.nom %></h1>
+
+        <h1
+          style="
+            font-family: var(--serif);
+            color: var(--navy);
+            margin:0;
+          "
+        >
+          <%= candidat.prenom %>
+          <%= candidat.nom %>
+        </h1>
+
         <p class="candidat-meta">
-          Zone : <strong><%= candidat.zone %></strong> ·
-          Déposée le <strong><%= new Date(candidat.date_soumission).toLocaleString("fr-FR") %></strong>
+
+          Zone :
+          <strong>
+            <%= candidat.zone %>
+          </strong>
+
+          ·
+
+          Déposée le
+          <strong>
+            <%= new Date(candidat.date_soumission).toLocaleString("fr-FR") %>
+          </strong>
+
         </p>
+
       </div>
+
+
       <div>
-        <% if (candidat.statut === "retenu") { %><span class="badge retenu">Retenu</span>
-        <% } else if (candidat.statut === "non_retenu") { %><span class="badge refuse">Non retenu</span>
-        <% } else { %><span class="badge attente">En attente</span><% } %>
+
+        <% if (candidat.statut === "retenu") { %>
+
+          <span class="badge retenu">
+            Retenu
+          </span>
+
+        <% } else if (candidat.statut === "non_retenu") { %>
+
+          <span class="badge refuse">
+            Non retenu
+          </span>
+
+        <% } else { %>
+
+          <span class="badge attente">
+            En attente
+          </span>
+
+        <% } %>
+
       </div>
+
     </div>
+
 
     <div class="grid-2">
+
+
+      <!-- ================================================= -->
+      <!-- VIDEO -->
+      <!-- ================================================= -->
+
       <div>
-        <video controls class="video-preview" style="width:100%; background:#000; border-radius: var(--radius);">
-          <source src="/uploads/<%= candidat.video_filename %>">
-          Votre navigateur ne peut pas lire cette vidéo.
+
+        <%
+          let videoSrc = candidat.video_filename || "";
+
+          /*
+           * Les nouvelles candidatures utilisent Cloudinary.
+           * Les anciennes peuvent encore utiliser /uploads/.
+           */
+
+          if (
+            videoSrc &&
+            !videoSrc.startsWith("http://") &&
+            !videoSrc.startsWith("https://")
+          ) {
+            videoSrc = "/uploads/" + videoSrc;
+          }
+        %>
+
+
+        <video
+          controls
+          playsinline
+          preload="metadata"
+          class="video-preview"
+          style="
+            width:100%;
+            background:#000;
+            border-radius:var(--radius);
+          "
+        >
+
+          <% if (videoSrc) { %>
+
+            <source
+              src="<%= videoSrc %>"
+              type="video/mp4"
+            >
+
+            Votre navigateur ne peut pas lire cette vidéo.
+
+          <% } else { %>
+
+            Votre navigateur ne peut pas lire cette vidéo.
+
+          <% } %>
+
         </video>
 
-        <div class="card" style="margin-top:20px;">
-          <h3 style="font-family: var(--serif); color: var(--navy); margin-top:0;">Coordonnées</h3>
-          <p><strong>Email :</strong> <a href="mailto:<%= candidat.email %>"><%= candidat.email %></a></p>
-          <p><strong>WhatsApp :</strong> <%= candidat.whatsapp %>
-            — <a href="<%= lienWhatsAppUrl %>" target="_blank" class="btn small gold">Envoyer sur WhatsApp</a>
+
+        <% if (videoSrc) { %>
+
+          <p
+            style="
+              font-size:0.8rem;
+              color:var(--grey);
+              margin-top:8px;
+              word-break:break-all;
+            "
+          >
+            Vidéo enregistrée sur Cloudinary.
           </p>
-          <p style="font-size:0.8rem; color:var(--grey);">
-            Email envoyé : <%= candidat.email_envoye ? "✅ oui" : "— pas encore" %><br>
-            WhatsApp envoyé : <%= candidat.whatsapp_envoye ? "✅ oui" : "— pas encore" %>
+
+        <% } else { %>
+
+          <div
+            class="alert error"
+            style="margin-top:15px;"
+          >
+            Aucune vidéo associée à cette candidature.
+          </div>
+
+        <% } %>
+
+
+        <!-- ============================================= -->
+        <!-- COORDONNEES -->
+        <!-- ============================================= -->
+
+        <div
+          class="card"
+          style="margin-top:20px;"
+        >
+
+          <h3
+            style="
+              font-family:var(--serif);
+              color:var(--navy);
+              margin-top:0;
+            "
+          >
+            Coordonnées
+          </h3>
+
+
+          <p>
+
+            <strong>Email :</strong>
+
+            <a
+              href="mailto:<%= candidat.email %>"
+            >
+              <%= candidat.email %>
+            </a>
+
           </p>
+
+
+          <p>
+
+            <strong>WhatsApp :</strong>
+
+            <%= candidat.whatsapp %>
+
+            —
+
+            <a
+              href="<%= lienWhatsAppUrl %>"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn small gold"
+            >
+              Envoyer sur WhatsApp
+            </a>
+
+          </p>
+
+
+          <p
+            style="
+              font-size:0.8rem;
+              color:var(--grey);
+            "
+          >
+
+            Email envoyé :
+            <%= candidat.email_envoye ? "✅ oui" : "— pas encore" %>
+
+            <br>
+
+            WhatsApp envoyé :
+            <%= candidat.whatsapp_envoye ? "✅ oui" : "— pas encore" %>
+
+          </p>
+
         </div>
+
       </div>
 
+
+      <!-- ================================================= -->
+      <!-- DECISION -->
+      <!-- ================================================= -->
+
       <div class="decision-box">
-        <h3>Décision</h3>
-        <p style="color:var(--grey); font-size:0.88rem;">
-          Cocher une décision enregistre le statut et envoie automatiquement l'email de réponse
-          (ainsi que le WhatsApp, si l'API est configurée — sinon utilisez le bouton "Envoyer sur WhatsApp" ci-dessus).
+
+        <h3>
+          Décision
+        </h3>
+
+
+        <p
+          style="
+            color:var(--grey);
+            font-size:0.88rem;
+          "
+        >
+          Cocher une décision enregistre le statut et envoie
+          automatiquement l'email de réponse ainsi que le WhatsApp,
+          si l'API est configurée.
         </p>
-        <form action="/admin/candidat/<%= candidat.id %>/statut" method="POST">
+
+
+        <form
+          action="/admin/candidat/<%= candidat.id %>/statut"
+          method="POST"
+        >
+
           <div class="field">
-            <label for="note_admin">Note interne (facultative, non envoyée au candidat)</label>
-            <textarea id="note_admin" name="note_admin" rows="3"><%= candidat.note_admin || "" %></textarea>
+
+            <label for="note_admin">
+              Note interne
+              (facultative, non envoyée au candidat)
+            </label>
+
+            <textarea
+              id="note_admin"
+              name="note_admin"
+              rows="3"
+            ><%= candidat.note_admin || "" %></textarea>
+
           </div>
+
+
           <div class="btn-row">
-            <button type="submit" name="statut" value="retenu" class="btn" style="background: var(--green);">✅ Vidéo retenue</button>
-            <button type="submit" name="statut" value="non_retenu" class="btn" style="background: var(--red);">❌ Non retenue</button>
+
+            <button
+              type="submit"
+              name="statut"
+              value="retenu"
+              class="btn"
+              style="background:var(--green);"
+            >
+              ✅ Vidéo retenue
+            </button>
+
+
+            <button
+              type="submit"
+              name="statut"
+              value="non_retenu"
+              class="btn"
+              style="background:var(--red);"
+            >
+              ❌ Non retenue
+            </button>
+
           </div>
+
         </form>
+
+
         <% if (candidat.statut !== "en_attente") { %>
-          <form action="/admin/candidat/<%= candidat.id %>/statut" method="POST" style="margin-top:12px;">
-            <input type="hidden" name="note_admin" value="<%= candidat.note_admin || '' %>">
-            <button type="submit" name="statut" value="en_attente" class="btn outline small">Remettre en attente</button>
+
+          <form
+            action="/admin/candidat/<%= candidat.id %>/statut"
+            method="POST"
+            style="margin-top:12px;"
+          >
+
+            <input
+              type="hidden"
+              name="note_admin"
+              value="<%= candidat.note_admin || '' %>"
+            >
+
+
+            <button
+              type="submit"
+              name="statut"
+              value="en_attente"
+              class="btn outline small"
+            >
+              Remettre en attente
+            </button>
+
           </form>
+
         <% } %>
+
       </div>
+
     </div>
+
   </div>
+
 </body>
 </html>
