@@ -27,7 +27,10 @@
   <div class="field">
     <label for="zone">Votre zone School Voice</label>
     <select id="zone" name="zone" required>
-      <option value="" disabled selected>Choisissez votre zone</option>
+      <option value="" disabled selected>
+        Choisissez votre zone
+      </option>
+
       <% zones.forEach(z => { %>
         <option value="<%= z %>"><%= z %></option>
       <% }) %>
@@ -41,6 +44,7 @@
 
   <div class="field">
     <label for="whatsapp">Numéro WhatsApp (fonctionnel)</label>
+
     <input
       type="tel"
       id="whatsapp"
@@ -48,12 +52,15 @@
       placeholder="Ex : 22961234567"
       required
     >
+
     <p class="hint">
       Format international sans le "+", ex : 22961234567.
     </p>
   </div>
 
+  <!-- VIDÉO -->
   <div class="field">
+
     <label>Votre vidéo — 60 secondes maximum</label>
 
     <div class="video-drop" id="videoDrop">
@@ -67,8 +74,9 @@
       </button>
 
       <p id="videoStatus">
-        Formats acceptés : MP4, MOV, WebM… Taille maximale :
-        <%= tailleMaxMo %> Mo.
+        Cliquez sur le bouton pour sélectionner votre vidéo.
+        Formats : MP4, MOV, WebM.
+        Taille maximale : <%= tailleMaxMo %> Mo.
       </p>
 
       <video
@@ -76,19 +84,40 @@
         class="video-preview"
         controls
         playsinline
-        style="display:none;"
+        preload="metadata"
+        style="display:none; width:100%; margin-top:15px;"
       ></video>
 
     </div>
 
-    <!-- Informations envoyées à notre serveur après l'upload Cloudinary -->
-    <input type="hidden" name="video_url" id="videoUrl">
-    <input type="hidden" name="video_public_id" id="videoPublicId">
-    <input type="hidden" name="video_original_name" id="videoOriginalName">
-    <input type="hidden" name="duree" id="dureeVideo">
+    <!-- Données Cloudinary -->
+    <input
+      type="hidden"
+      name="video_url"
+      id="videoUrl"
+    >
+
+    <input
+      type="hidden"
+      name="video_public_id"
+      id="videoPublicId"
+    >
+
+    <input
+      type="hidden"
+      name="video_original_name"
+      id="videoOriginalName"
+    >
+
+    <input
+      type="hidden"
+      name="duree"
+      id="dureeVideo"
+    >
 
   </div>
 
+  <!-- BOUTON ENVOYER -->
   <button
     type="submit"
     class="btn gold full"
@@ -98,196 +127,444 @@
     Envoyer ma candidature
   </button>
 
-  <p class="hint" style="text-align:center; margin-top:10px;">
-    Le bouton s'active une fois votre vidéo envoyée et vérifiée.
+  <p
+    class="hint"
+    id="submitHint"
+    style="text-align:center; margin-top:10px;"
+  >
+    Le bouton s'activera après l'envoi et la vérification de votre vidéo.
   </p>
 
 </form>
 
   </div>
-</div><!-- Widget officiel Cloudinary --><script
+</div><!-- =========================================
+     CLOUDINARY UPLOAD WIDGET
+========================================= --><script
   src="https://upload-widget.cloudinary.com/latest/global/all.js"
   type="text/javascript">
 </script><script>
-  const btnChoisirVideo = document.getElementById("btnChoisirVideo");
-  const btnEnvoyer = document.getElementById("btnEnvoyer");
 
-  const preview = document.getElementById("videoPreview");
-  const statusEl = document.getElementById("videoStatus");
-  const dropZone = document.getElementById("videoDrop");
+  document.addEventListener("DOMContentLoaded", function () {
 
-  const videoUrlInput = document.getElementById("videoUrl");
-  const videoPublicIdInput = document.getElementById("videoPublicId");
-  const videoOriginalNameInput = document.getElementById("videoOriginalName");
-  const dureeInput = document.getElementById("dureeVideo");
+    const btnChoisirVideo =
+      document.getElementById("btnChoisirVideo");
 
-  const CLOUD_NAME = "krylli5g";
-  const UPLOAD_PRESET = "school_voice_videos";
+    const btnEnvoyer =
+      document.getElementById("btnEnvoyer");
 
-  const myWidget = cloudinary.createUploadWidget(
-    {
-      cloudName: CLOUD_NAME,
-      uploadPreset: UPLOAD_PRESET,
+    const preview =
+      document.getElementById("videoPreview");
 
-      sources: ["local"],
+    const statusEl =
+      document.getElementById("videoStatus");
 
-      multiple: false,
-      maxFiles: 1,
+    const dropZone =
+      document.getElementById("videoDrop");
 
-      resourceType: "video",
+    const form =
+      document.getElementById("formCandidature");
 
-      clientAllowedFormats: [
-        "mp4",
-        "mov",
-        "webm",
-        "m4v"
-      ],
+    const videoUrlInput =
+      document.getElementById("videoUrl");
 
-      maxFileSize: <%= Number(tailleMaxMo || 150) %> * 1024 * 1024,
+    const videoPublicIdInput =
+      document.getElementById("videoPublicId");
 
-      language: "fr",
+    const videoOriginalNameInput =
+      document.getElementById("videoOriginalName");
 
-      showAdvancedOptions: false,
-      showCompletedButton: false,
-      showUploadMoreButton: false,
+    const dureeInput =
+      document.getElementById("dureeVideo");
 
-      singleUploadAutoClose: true,
+    const submitHint =
+      document.getElementById("submitHint");
 
-      styles: {
-        palette: {
-          window: "#FFFFFF",
-          windowBorder: "#D4AF37",
-          tabIcon: "#D4AF37",
-          menuIcons: "#444444",
-          textDark: "#222222",
-          textLight: "#FFFFFF",
-          link: "#D4AF37",
-          action: "#D4AF37",
-          inactiveTabIcon: "#777777",
-          error: "#C62828",
-          inProgress: "#D4AF37",
-          complete: "#2E7D32",
-          sourceBg: "#F7F7F7"
-        }
-      }
 
-    },
+    /*
+     * Vérification du chargement de Cloudinary
+     */
 
-    (error, result) => {
+    if (
+      typeof cloudinary === "undefined"
+    ) {
 
-      if (error) {
-        console.error("Erreur Cloudinary :", error);
+      console.error(
+        "❌ Cloudinary Widget n'est pas chargé."
+      );
 
-        statusEl.textContent =
-          "Une erreur est survenue pendant l'envoi de la vidéo. Veuillez réessayer.";
+      statusEl.textContent =
+        "Impossible de charger le système d'envoi vidéo. Actualisez la page.";
 
-        btnEnvoyer.disabled = true;
-        return;
-      }
+      return;
+    }
 
-      if (!result) return;
 
-      /*
-       * Upload terminé avec succès
-       */
-      if (result.event === "success") {
+    /*
+     * PARAMÈTRES CLOUDINARY
+     */
 
-        const info = result.info;
+    const CLOUD_NAME =
+      "krylli5g";
 
-        console.log("Vidéo envoyée sur Cloudinary :", info);
+    const UPLOAD_PRESET =
+      "school_voice_videos";
 
-        const duree = Number(info.duration || 0);
+
+    /*
+     * CRÉATION DU WIDGET
+     */
+
+    const myWidget =
+      cloudinary.createUploadWidget(
+
+        {
+
+          cloudName: CLOUD_NAME,
+
+          uploadPreset: UPLOAD_PRESET,
+
+          sources: [
+            "local"
+          ],
+
+          multiple: false,
+
+          maxFiles: 1,
+
+          resourceType: "video",
+
+          clientAllowedFormats: [
+            "mp4",
+            "mov",
+            "webm",
+            "m4v"
+          ],
+
+          maxFileSize:
+            <%= Number(tailleMaxMo || 150) %>
+            * 1024
+            * 1024,
+
+          language: "fr",
+
+          showAdvancedOptions: false,
+
+          showCompletedButton: false,
+
+          showUploadMoreButton: false,
+
+          singleUploadAutoClose: true
+
+        },
+
 
         /*
-         * Vérification de la durée
+         * RETOUR CLOUDINARY
          */
-        if (duree > 60.5) {
+
+        function (error, result) {
+
+          console.log(
+            "Cloudinary event :",
+            result
+          );
+
+
+          /*
+           * ERREUR
+           */
+
+          if (error) {
+
+            console.error(
+              "❌ Erreur Cloudinary :",
+              error
+            );
+
+            statusEl.textContent =
+              "❌ Erreur pendant l'envoi de la vidéo. Veuillez réessayer.";
+
+            dropZone.classList.add(
+              "error"
+            );
+
+            btnEnvoyer.disabled =
+              true;
+
+            return;
+          }
+
+
+          if (!result) {
+            return;
+          }
+
+
+          /*
+           * UPLOAD TERMINÉ
+           */
+
+          if (
+            result.event === "success"
+          ) {
+
+            const info =
+              result.info || {};
+
+            console.log(
+              "✅ Vidéo reçue par Cloudinary :",
+              info
+            );
+
+
+            /*
+             * URL CLOUDINARY
+             */
+
+            const videoUrl =
+              info.secure_url || "";
+
+
+            /*
+             * Si Cloudinary n'a pas
+             * retourné d'URL
+             */
+
+            if (!videoUrl) {
+
+              console.error(
+                "❌ Aucune secure_url retournée.",
+                info
+              );
+
+              statusEl.textContent =
+                "La vidéo a été envoyée mais son adresse n'a pas été récupérée. Veuillez réessayer.";
+
+              btnEnvoyer.disabled =
+                true;
+
+              return;
+            }
+
+
+            /*
+             * DURÉE
+             */
+
+            const duree =
+              Number(
+                info.duration || 0
+              );
+
+
+            /*
+             * VIDÉO TROP LONGUE
+             */
+
+            if (
+              duree &&
+              duree > 60.5
+            ) {
+
+              statusEl.textContent =
+                "❌ Votre vidéo dépasse 60 secondes. Merci de choisir une vidéo plus courte.";
+
+              dropZone.classList.add(
+                "error"
+              );
+
+              btnEnvoyer.disabled =
+                true;
+
+              return;
+            }
+
+
+            /*
+             * ENREGISTREMENT
+             * DES DONNÉES
+             */
+
+            videoUrlInput.value =
+              videoUrl;
+
+            videoPublicIdInput.value =
+              info.public_id || "";
+
+            videoOriginalNameInput.value =
+              info.original_filename ||
+              info.public_id ||
+              "video";
+
+            dureeInput.value =
+              duree
+                ? duree.toFixed(1)
+                : "";
+
+
+            /*
+             * APERÇU VIDÉO
+             */
+
+            preview.src =
+              videoUrl;
+
+            preview.style.display =
+              "block";
+
+
+            /*
+             * ÉTAT VISUEL
+             */
+
+            dropZone.classList.remove(
+              "error"
+            );
+
+            dropZone.classList.add(
+              "has-file"
+            );
+
+
+            /*
+             * MESSAGE
+             */
+
+            if (duree) {
+
+              statusEl.textContent =
+                "✓ Vidéo envoyée avec succès — " +
+                duree.toFixed(1) +
+                " seconde(s).";
+
+            } else {
+
+              statusEl.textContent =
+                "✓ Vidéo envoyée avec succès.";
+
+            }
+
+
+            /*
+             * ACTIVATION DU BOUTON
+             */
+
+            btnEnvoyer.disabled =
+              false;
+
+            submitHint.textContent =
+              "✓ Votre vidéo est prête. Vous pouvez maintenant envoyer votre candidature.";
+
+            submitHint.style.fontWeight =
+              "bold";
+
+
+            console.log(
+              "✅ Bouton Envoyer activé."
+            );
+
+          }
+
+        }
+
+      );
+
+
+    /*
+     * BOUTON CHOISIR LA VIDÉO
+     */
+
+    btnChoisirVideo.addEventListener(
+      "click",
+      function () {
+
+        /*
+         * Réinitialisation
+         */
+
+        videoUrlInput.value =
+          "";
+
+        videoPublicIdInput.value =
+          "";
+
+        videoOriginalNameInput.value =
+          "";
+
+        dureeInput.value =
+          "";
+
+        preview.removeAttribute(
+          "src"
+        );
+
+        preview.style.display =
+          "none";
+
+        dropZone.classList.remove(
+          "error",
+          "has-file"
+        );
+
+        btnEnvoyer.disabled =
+          true;
+
+        submitHint.textContent =
+          "Attendez la fin de l'envoi de votre vidéo.";
+
+        statusEl.textContent =
+          "Sélectionnez votre vidéo puis attendez la fin de l'envoi...";
+
+
+        /*
+         * OUVERTURE CLOUDINARY
+         */
+
+        myWidget.open();
+
+      }
+    );
+
+
+    /*
+     * PROTECTION DU FORMULAIRE
+     */
+
+    form.addEventListener(
+      "submit",
+      function (event) {
+
+        if (
+          !videoUrlInput.value
+        ) {
+
+          event.preventDefault();
 
           statusEl.textContent =
-            "Votre vidéo dépasse 60 secondes. Merci de sélectionner une vidéo plus courte.";
+            "❌ Veuillez d'abord sélectionner et envoyer votre vidéo.";
 
-          dropZone.classList.add("error");
-
-          btnEnvoyer.disabled = true;
+          alert(
+            "Veuillez sélectionner et envoyer votre vidéo avant de continuer."
+          );
 
           return;
         }
 
-        /*
-         * Enregistrement des informations Cloudinary
-         */
-        videoUrlInput.value = info.secure_url || "";
-        videoPublicIdInput.value = info.public_id || "";
-        videoOriginalNameInput.value =
-          info.original_filename || info.public_id || "video";
-
-        dureeInput.value = duree
-          ? duree.toFixed(1)
-          : "";
 
         /*
-         * Prévisualisation
+         * Empêcher les doubles clics
          */
-        preview.src = info.secure_url;
-        preview.style.display = "block";
 
-        dropZone.classList.remove("error");
-        dropZone.classList.add("has-file");
+        btnEnvoyer.disabled =
+          true;
 
-        statusEl.textContent =
-          "✓ Vidéo envoyée et vérifiée. Vous pouvez maintenant envoyer votre candidature.";
+        btnEnvoyer.textContent =
+          "Enregistrement de votre candidature…";
 
-        btnEnvoyer.disabled = false;
       }
-
-    }
-  );
-
-  /*
-   * Ouverture du widget Cloudinary
-   */
-  btnChoisirVideo.addEventListener("click", () => {
-
-    /*
-     * On remet l'ancien état à zéro
-     */
-    videoUrlInput.value = "";
-    videoPublicIdInput.value = "";
-    videoOriginalNameInput.value = "";
-    dureeInput.value = "";
-
-    btnEnvoyer.disabled = true;
-
-    statusEl.textContent =
-      "Sélectionnez votre vidéo puis attendez la fin de l'envoi.";
-
-    myWidget.open();
+    );
 
   });
 
-
-  /*
-   * Sécurité supplémentaire :
-   * empêcher l'envoi si aucune vidéo Cloudinary n'est enregistrée.
-   */
-  document
-    .getElementById("formCandidature")
-    .addEventListener("submit", (event) => {
-
-      if (!videoUrlInput.value) {
-
-        event.preventDefault();
-
-        statusEl.textContent =
-          "Veuillez d'abord sélectionner et envoyer votre vidéo.";
-
-        alert("Veuillez sélectionner votre vidéo avant d'envoyer votre candidature.");
-
-        return false;
-      }
-
-      btnEnvoyer.disabled = true;
-      btnEnvoyer.textContent = "Enregistrement de votre candidature…";
-
-    });
 </script><%- include("partials/footer") %>
