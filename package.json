@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
+    "cloudinary": "^2.7.0",
     "connect-sqlite3": "^0.9.15",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
